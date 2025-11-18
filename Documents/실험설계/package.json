@@ -1,0 +1,9 @@
+{
+  "name": "11demo",
+  "version": "1.0.0",
+  "description": "Experimental 3D Point Cloud",
+  "scripts": {
+    "build": "echo 'No build step required'"
+  }
+}
+
