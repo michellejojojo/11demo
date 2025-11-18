@@ -1,9 +1,5 @@
 {
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/minigpt.html"
-    }
-  ]
+  "cleanUrls": true,
+  "trailingSlash": false
 }
 
