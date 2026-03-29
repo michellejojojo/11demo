@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Experimental 3D Point Cloud (Condition Selection·Lock · Guided/Free · Log)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    :root{ --bg:#0b0b0c; --panel:#101114; --panel2:#0f1012; --text:#e6e6e6; --muted:#a6a6a6; --acc:#7aa2ff; --border:#23252b; --chip:#17181c; --shadow:0 12px 40px rgba(0,0,0,.45); }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:var(--bg);color:var(--text)}
+    #app{display:grid; grid-template-columns: 1fr; height:100%}
+    #stage{position:relative; height:100%; background:#000}
+    #ui{ position:absolute; top:10px; left:10px; z-index:10; background:rgba(0,0,0,.55); color:#eee; padding:12px 14px; border-radius:12px; box-shadow:var(--shadow); font-size:12px; line-height:1.5; min-width:340px; border:1px solid var(--border) }
+    #ui label{display:block;margin:8px 0 4px;font-weight:700}
+    #legend{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+    .chip{display:flex;align-items:center;gap:6px;border:1px solid #444;border-radius:10px;padding:4px 8px;background:#111;color:#ddd}
+    .dot{width:12px;height:12px;border-radius:6px;display:inline-block;border:1px solid rgba(255,255,255,.35)}
+    .muted{color:var(--muted)} .row{display:flex; gap:8px; align-items:center} .row>*:not(label){flex:1}
+    .btn{border:1px solid var(--border); background:#16181d; color:#eee; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+    #tooltip{ position:fixed;z-index:20;pointer-events:none; background:rgba(0,0,0,.9);color:#fff;padding:6px 8px;border-radius:8px;font-size:12px; transform:translate(12px,-12px);white-space:nowrap;display:none; box-shadow:var(--shadow); border:1px solid rgba(255,255,255,.12); }
+    canvas{display:block}
+    #taskPanel.card{position:absolute;top:10px;right:10px;z-index:10;background:rgba(0,0,0,.55); color:#eee;padding:12px 14px;border-radius:12px;border:1px solid var(--border);width:360px}
+    #taskPanel h4{margin:0 0 6px 0} #taskPanel .btnNext{margin-top:8px}
+    #sessionBar{position:absolute; right:10px; bottom:10px; display:flex; gap:8px; z-index:10}
+    #inspector.card{position:absolute; left:10px; bottom:60px; z-index:10; background:rgba(0,0,0,.55); color:#eee; padding:12px 14px; border-radius:12px; border:1px solid var(--border); width:360px}
+    /* --- Condition Selection Modal --- */
+    #setupModal{position:fixed; inset:0; background:rgba(0,0,0,.7); display:flex; align-items:center; justify-content:center; z-index:100}
+    .modalCard{width:min(800px,92vw); background:#0f1116; border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); padding:18px}
+    .modalCard h3{margin:0 0 12px 0}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .cond{border:1px solid var(--border); border-radius:12px; padding:12px; background:#12141a}
+    .cond h4{margin:0 0 6px 0}
+    .pinRow{display:flex; gap:8px; align-items:center; margin-top:10px}
+    .pinRow input{flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:#111318; color:#eee}
+    .mini{font-size:12px; color:#aab}
+    #gear{position:absolute; left:10px; bottom:10px; z-index:10; opacity:.6}
+  </style>
+
+  <script type="importmap">
+  {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+  </script>
+</head>
+<body>
+<div id="app">
+  <section id="stage">
+    <div id="setupModal">
+      <div class="modalCard">
+        <h3>Experimental Condition Selection · Lock</h3>
+        <div class="grid">
+          <div class="cond"><h4>Low Load × Guided</h4><div class="mini">LC-G · Points 500 · Top 100 Labels · Overlay Off · Task Steps</div><button class="btn" id="btnLCG" data-cond="LC-G" type="button">Start with this condition</button></div>
+          <div class="cond"><h4>Low Load × Free</h4><div class="mini">LC-S · Points 500 · Top 100 Labels · Overlay Off · Free Exploration</div><button class="btn" id="btnLCS" data-cond="LC-S" type="button">Start with this condition</button></div>
+          <div class="cond"><h4>High Load × Guided</h4><div class="mini">HC-G · Points 5000 · Unlimited Labels · Overlay On · Task Steps</div><button class="btn" id="btnHCG" data-cond="HC-G" type="button">Start with this condition</button></div>
+          <div class="cond"><h4>High Load × Free</h4><div class="mini">HC-S · Points 5000 · Unlimited Labels · Overlay On · Free Exploration</div><button class="btn" id="btnHCS" data-cond="HC-S" type="button">Start with this condition</button></div>
+        </div>
+        <div class="pinRow"><label class="mini"><input type="checkbox" id="debugChk"> Pilot Debug (Load/N button exposure)</label></div>
+        <div class="pinRow"><span class="mini">Reopen with Researcher PIN:</span><input type="password" id="pinInput" placeholder="e.g., 0425"><button class="btn" id="savePin" type="button">Set PIN</button></div>
+      </div>
+    </div>
+
+    <button id="gear" class="btn" title="Settings">⚙︎</button>
+
+    <div id="ui">
+      <div style="font-weight:800;margin-bottom:6px">Experimental Settings (Condition Locked)</div>
+      <div class="row"><span class="muted">Color Basis</span><span>Type (User/Attribute/Action)</span></div>
+      <div class="row"><span class="muted">Selection Mode</span>
+        <div style="display:flex;gap:6px">
+          <label><input type="radio" name="selmode" id="selPoint" checked> Point</label>
+          <label><input type="radio" name="selmode" id="selCluster"> Cluster</label>
+          <span class="muted">(Shift+Click=Cluster)</span>
+        </div>
+      </div>
+      <label>Size <span id="sizeVal"></span></label>
+      <input id="size" type="range" min="1" max="10" step="1" value="3" disabled>
+      <label>Radius (Sphere Radius) <span id="radVal"></span></label>
+      <input id="radius" type="range" min="20" max="140" step="2" value="70" disabled>
+      <label>Cluster Spread (σ) <span id="sprVal"></span></label>
+      <input id="spread" type="range" min="2" max="30" step="1" value="10" disabled>
+
+      <div id="debugControls" style="margin-top:10px; display:none">
+        <label>Load Condition (Pilot Only)</label>
+        <div class="row"><button id="lowLoad" class="btn" type="button">Low Load: N=500</button><button id="highLoad" class="btn" type="button">High Load: N=5000</button></div>
+        <div class="row" style="margin-top:8px"><input id="nInput" type="number" min="100" max="20000" step="100" value="5000" placeholder="Point Count N"><button id="applyN" class="btn" type="button">Apply N</button></div>
+        <div class="muted" style="margin-top:6px">※ Labels: Low Load=Top 100, High Load=All (overlap allowed)</div>
+      </div>
+
+      <div id="legend" style="margin-top:10px"></div>
+      <div class="muted" style="margin-top:6px">Color: Gray=User · Magenta=Attribute(Inferred) · Blue=Action | Drag: Rotate · Wheel: Zoom</div>
+    </div>
+
+    <div id="taskPanel" class="card"></div>
+    <div id="tooltip"></div>
+    <div id="inspector" class="card"></div>
+    <div id="sessionBar"><button id="btnDownload" class="btn" type="button">Save Log</button></div>
+  </section>
+</div>
+
+<script type="module">
+  import * as THREE from "three";
+  import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+  /* ====== Condition Map ====== */
+  const MAP = {
+    "LC-G": { N: 500,  labelLimit: 100, size: 3.0, overlay: false, guided: true,  sigma: 10 },
+    "LC-S": { N: 500,  labelLimit: 100, size: 3.0, overlay: false, guided: false, sigma: 10 },
+    "HC-G": { N: 5000, labelLimit: Infinity, size: 3.6, overlay: true,  guided: true,  sigma: 35 },
+    "HC-S": { N: 5000, labelLimit: Infinity, size: 3.6, overlay: true,  guided: false, sigma: 35 }
+  };
+
+  /* ====== Global State ====== */
+  let COND = "LC-G";
+  let CFG = MAP[COND];
+  let DEBUG = false;
+  const K = 4;
+  let N = 0; // Set initial N to 0 to indicate data has not been loaded yet
+  let RADIUS = 70, SIGMA = CFG.sigma, SIZE = CFG.size;
+  let LABEL_LIMIT = CFG.labelLimit;
+
+  // Seeded random option
+  const USE_SEEDED_RANDOM = false;
+  let seed = 42;
+  function rnd(){ seed = (seed*1664525 + 1013904223) >>> 0; return seed/4294967296; }
+  function R(){ return USE_SEEDED_RANDOM ? rnd() : Math.random(); }
+
+  /* ====== Three.js Basics ====== */
+  const stageEl = document.getElementById("stage");
+  const renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  stageEl.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
+  const camera = new THREE.PerspectiveCamera(50, 2, 0.1, 5000);
+  camera.position.set(120,120,180);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const light = new THREE.DirectionalLight(0xffffff, 0.6);
+  light.position.set(1,1,1); scene.add(light);
+
+  // UI 값
+  const sizeVal  = document.getElementById("sizeVal");
+  const radVal   = document.getElementById("radVal");
+  const sprVal   = document.getElementById("sprVal");
+  function syncLabels(){ sizeVal.textContent = String(SIZE); radVal.textContent = String(RADIUS); sprVal.textContent = String(SIGMA); }
+
+  /* ====== Legend/Colors (Type-based) ====== */
+  const TYPE_COLORS = {
+    user:  new THREE.Color(0xb3b3b3),   // Gray: User
+    attr:  new THREE.Color(0xff2bb3),   // Magenta: Attribute(Inferred)
+    act:   new THREE.Color(0x64b5f6)    // Blue: Action
+  };
+  const CLUSTER_NAMES = ['Nocturnal','Family-oriented','Regular','Light Usage'];
+  // Define simulation data per cluster
+  const CLUSTER_METRICS = [
+    { id: 0, name: 'Nocturnal', night_interval_min: 45, fridge_opens_night: 8.2 },
+    { id: 1, name: 'Family-oriented', night_interval_min: 120, fridge_opens_night: 2.1 },
+    { id: 2, name: 'Regular', night_interval_min: 240, fridge_opens_night: 1.5 },
+    { id: 3, name: 'Light Usage', night_interval_min: 180, fridge_opens_night: 3.3 }
+  ];
+  const legend = document.getElementById("legend");
+  legend.innerHTML = '';
+  (function(){
+    var items = [
+      {label:'User', color: TYPE_COLORS.user},
+      {label:'Attribute(Inferred)', color: TYPE_COLORS.attr},
+      {label:'Action', color: TYPE_COLORS.act}
+    ];
+    for (var i=0;i<items.length;i++){
+      var item = items[i];
+      var chip=document.createElement('div'); chip.className='chip'; chip.style.pointerEvents='none';
+      var dot=document.createElement('span'); dot.className='dot'; dot.style.background='#'+item.color.getHexString();
+      var label=document.createElement('span'); label.textContent=item.label; chip.appendChild(dot); chip.appendChild(label); legend.appendChild(chip);
+    }
+  })();
+
+  /* ====== Name Lists (Sample) ====== */
+  const ATTR_NAMES = [
+    "AttributeScore_HouseholdType_ParentOfPreschooler(4-5yrs)","AttributeScore_HouseholdType_ParentStatus","AttributeScore_HouseholdType_ParentOfAdult(18-26yrs)",
+    "AttributeScore_HouseholdType_Senior","AttributeScore_HouseholdType_ApartmentResident","AttributeScore_HouseholdType_ParentOfInfant(0-1yr)",
+    "AttributeScore_Interest_TVEnthusiast-TVGameProgram","AttributeScore_Interest_Health-HealthCare","AttributeScore_Interest_Gamer-MobileGame",
+    "AttributeScore_Interest_Beauty-SkinCare","AttributeScore_Interest_Education-University/Graduate","AttributeScore_Interest_RealEstate-Apartment",
+    "AttributeScore_Interest_Shopping-Luxury","AttributeScore_Interest_MediaEntertainment-TVEnthusiast","AttributeScore_Interest_Food-KoreanCuisine",
+    "AttributeScore_Interest_MobileGameUsage"
+  ];
+  const ACT_NAMES = [
+    "Washer_AllergyCare_LargeLoad_Wash","Washer_AI_SmallLoad_Wash","Dryer_AI_Dry","Styler_Sterilize","MicrowaveOven_Oven_Cook",
+    "Refrigerator_FridgeDoor_LongTime_Open","Dishwasher_Auto_Wash","Cooktop_MultipleBurners_HighHeat_LongTime_Use","WaterPurifier_HotWater_MediumAmount_Dispense",
+    "AirConditioner_TempChangeFrequent_LongTime_Cooling","AirPurifier_ShortTime_AirPurify","LateNight_Refrigerator_Open"
+  ];
+  function prettyAttr(s){ return s.replace(/^AttributeScore_/, '').replace(/_/g,' › '); }
+  function prettyAct(s){ return s.replace(/_/g,' · '); }
+
+  /* ====== Buffers ====== */
+  let positions, colors, clusterOf, labels, typeOf, meta, device;
+  let geom, mat, points, selGeom, selMat, selPoints, sphereWire;
+
+  function showSphereWire(R){
+    return; // Function disabled to draw nothing
+    if (sphereWire){ scene.remove(sphereWire); sphereWire.geometry.dispose(); sphereWire.material.dispose(); sphereWire=null; }
+    if (!CFG.overlay || R<=0) return;
+    const geo = new THREE.SphereGeometry(R, 24, 16);
+    const m = new THREE.MeshBasicMaterial({ color:0x333333, wireframe:true });
+    sphereWire = new THREE.Mesh(geo, m);
+    scene.add(sphereWire);
+  }
+  function spriteTex(size){
+    if(!size) size=32;
+    const c=document.createElement("canvas"); c.width=c.height=size;
+    const ctx=c.getContext("2d"); const r=size/2;
+    ctx.clearRect(0,0,size,size); ctx.fillStyle="white";
+    ctx.beginPath(); ctx.arc(r,r,r,0,Math.PI*2); ctx.fill();
+    const tex=new THREE.CanvasTexture(c);
+    tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter;
+    tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping; return tex;
+  }
+  const sprite = spriteTex(32);
+  function disposePoints(){
+    if(points){ scene.remove(points); geom.dispose(); mat.dispose(); points=null; }
+    if(selPoints){ scene.remove(selPoints); selGeom.dispose(); selMat.dispose(); selPoints=null; }
+  }
+  function rebuildBuffers(newN){
+    N = newN|0; if (N<100) N=100; disposePoints();
+    // If N is 0, keep arrays empty
+    if (N === 0) {
+      positions=new Float32Array(0); colors=new Float32Array(0); clusterOf=new Int32Array(0); labels=new Array(0); typeOf=new Array(0);
+    } else {
+      positions=new Float32Array(N*3); colors=new Float32Array(N*3); clusterOf=new Int32Array(N); labels=new Array(N); typeOf=new Array(N);
+    }
+
+    geom=new THREE.BufferGeometry(); geom.setAttribute("position", new THREE.BufferAttribute(positions,3)); geom.setAttribute("color", new THREE.BufferAttribute(colors,3));
+    mat=new THREE.PointsMaterial({ size: SIZE, map:sprite, alphaTest:0.5, transparent:true, vertexColors:true, sizeAttenuation:true });
+    points=new THREE.Points(geom, mat); scene.add(points);
+    selGeom=new THREE.BufferGeometry(); selGeom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(N*3),3));
+    selMat=new THREE.PointsMaterial({ size: SIZE*1.8, map:sprite, alphaTest:0.5, transparent:true, color:0xffffff, sizeAttenuation:true });
+    selPoints=new THREE.Points(selGeom, selMat); scene.add(selPoints);
+  }
+
+  /* ====== Data Generation ====== */
+  function randN(){ return (R()*2-1)+(R()*2-1)+(R()*2-1); }
+  function randOnSphere(){ const u=R()*2*Math.PI, v=Math.acos(R()*2-1); return new THREE.Vector3(Math.sin(v)*Math.cos(u), Math.sin(v)*Math.sin(u), Math.cos(v)); }
+  function sampleInBall(center, Rr, sigma){
+    // Removed for loop and if(boundary check) logic
+    const x=center.x+randN()*sigma, y=center.y+randN()*sigma, z=center.z+randN()*sigma;
+    return new THREE.Vector3(x,y,z); // Allow points to spread without boundaries
+  }
+  function computeCenters(){
+    const r=RADIUS*0.5;
+    const base=[ new THREE.Vector3(1,1,1), new THREE.Vector3(-1,1,-1), new THREE.Vector3(1,-1,-1), new THREE.Vector3(-1,-1,1) ].map(function(v){ return v.normalize().multiplyScalar(r); });
+    for(let i=0;i<K;i++){ base[i].add(randOnSphere().multiplyScalar(RADIUS*0.08)); }
+    return base;
+  }
+
+  function applyColors(){
+    if (N === 0) return; // Handle when no data
+    const colArr=geom.getAttribute('color').array;
+    for(let i=0;i<N;i++){
+      const ty = typeOf[i] || 'user';
+      const c = (ty==='user') ? TYPE_COLORS.user : (ty==='attr' ? TYPE_COLORS.attr : TYPE_COLORS.act);
+      colArr[i*3]=c.r; colArr[i*3+1]=c.g; colArr[i*3+2]=c.b;
+    }
+    geom.getAttribute('color').needsUpdate=true;
+  }
+
+  function synthesizeDeviceFlags(){
+    if (N === 0) return; // Handle when no data
+    device = new Array(N);
+    for(let i=0;i<N;i++){
+      const k = clusterOf[i];
+      let pTV = 0.25, pMobile = 0.45, pIPad = 0.30, pFridge = 0.85, pWasher = 0.78;
+      if (k===1){ pTV = 0.95; pMobile = 0.80; pIPad = 0.60; pFridge = 0.92; pWasher = 0.85; }
+      device[i] = { tv: R() < pTV, mobile: R() < pMobile, ipad: R() < pIPad, fridge: R() < pFridge, washer: R() < pWasher };
+    }
+  }
+
+  function regenerate(){
+    if (N === 0) { // Skip data generation if N is 0
+      disposePoints();
+      showSphereWire(RADIUS);
+      clearSelection();
+      syncLabels();
+      return;
+    }
+
+    showSphereWire(RADIUS);
+    const centers=computeCenters();
+    
+    // Uneven allocation ratio per cluster
+    // Cluster 0 (Nocturnal): 45%, Cluster 1: 25%, Cluster 2: 15%, Cluster 3: 15%
+    // Ratio sum: 45% + 25% + 15% + 15% = 100%
+    const clusterRatios = [0.45, 0.25, 0.15, 0.15];
+    const clusterCounts = [];
+    let allocatedTotal = 0;
+    
+    // Allocate point count per cluster according to ratio (N uses CFG.N value)
+    for(let k=0; k<K; k++){
+      const count = Math.floor(N * clusterRatios[k]);
+      clusterCounts.push(count);
+      allocatedTotal += count;
+    }
+    
+    // Remaining points are allocated to cluster 0 (Nocturnal)
+    const remainder = N - allocatedTotal;
+    if(remainder > 0){
+      clusterCounts[0] += remainder;
+    }
+
+    meta = new Array(N);
+
+    // Type ratio: User 25%, Attribute 35%, Action remainder → Global shuffle
+    const nUser = Math.max(1, Math.floor(N*0.25));
+    const nAttr = Math.max(1, Math.floor(N*0.35));
+    const typesPool = [];
+    for(let i=0;i<nUser;i++) typesPool.push('user');
+    for(let i=0;i<nAttr;i++) typesPool.push('attr');
+    for(let i=typesPool.length;i<N;i++) typesPool.push('act');
+    for(let i2=typesPool.length-1;i2>0;i2--){ const j=Math.floor(R()*(i2+1)); const tmp=typesPool[i2]; typesPool[i2]=typesPool[j]; typesPool[j]=tmp; }
+
+    let idx=0, ai=0, ci=0;
+
+    // --- Fix attribute/action for Task 3/3 to cluster 0('Nocturnal') ---
+    // 1. Fix 'Interest_Gamer-MobileGame' (attribute) to cluster 0
+    if (idx < N) {
+      const k = 0; // 'Nocturnal' cluster
+      const c = centers[k];
+      const p = sampleInBall(c, RADIUS, SIGMA);
+      positions[idx*3]=p.x; positions[idx*3+1]=p.y; positions[idx*3+2]=p.z;
+      clusterOf[idx]=k;
+      typeOf[idx]='attr'; // Force 'attribute' type
+      const name = "AttributeScore_Interest_Gamer-MobileGame"; // Original array text
+      labels[idx] = prettyAttr(name);
+      meta[idx] = { id: labels[idx], type: 'attr', cluster:k, clusterName: CLUSTER_NAMES[k] };
+      typesPool.pop(); // Consume one from total type pool
+      idx++; // Increment index
+    }
+
+    // 2. Fix 'Refrigerator_FridgeDoor_LongTime_Open' (action) to cluster 0
+    if (idx < N) {
+      const k = 0; // 'Nocturnal' cluster
+      const c = centers[k];
+      const p = sampleInBall(c, RADIUS, SIGMA);
+      positions[idx*3]=p.x; positions[idx*3+1]=p.y; positions[idx*3+2]=p.z;
+      clusterOf[idx]=k;
+      typeOf[idx]='act'; // Force 'action' type
+      const name = "Refrigerator_FridgeDoor_LongTime_Open"; // Original array text
+      labels[idx] = prettyAct(name);
+      meta[idx] = { id: labels[idx], type: 'act', cluster:k, clusterName: CLUSTER_NAMES[k] };
+      typesPool.pop(); // Consume one from total type pool
+      idx++; // Increment index
+    }
+    // --- End fixed code ---
+
+    // Generate points for each cluster according to allocated count
+    for(let k=0;k<K && idx<N;k++){
+      const c=centers[k];
+      const countForThisCluster = clusterCounts[k];
+      for(let i=0;i<countForThisCluster && idx<N;i++){
+        const p=sampleInBall(c,RADIUS,SIGMA);
+        positions[idx*3]=p.x; positions[idx*3+1]=p.y; positions[idx*3+2]=p.z;
+        clusterOf[idx]=k;
+
+        const ty = typesPool.pop() || 'act';
+        typeOf[idx]=ty;
+
+        if (ty==='user'){
+          const uid = 'U-' + String(idx).padStart(5,'0');
+          labels[idx]=uid;
+          meta[idx] = { id: uid, type: 'user', cluster:k, clusterName: CLUSTER_NAMES[k], group: Math.floor(idx/20) };
+        } else if (ty==='attr'){
+          const name = ATTR_NAMES[ai % Math.max(ATTR_NAMES.length,1)] || 'Attribute';
+          ai++;
+          labels[idx]=prettyAttr(name);
+          meta[idx] = { id: labels[idx], type: 'attr', cluster:k, clusterName: CLUSTER_NAMES[k] };
+        } else {
+          const name = ACT_NAMES[ci % Math.max(ACT_NAMES.length,1)] || 'Action';
+          ci++;
+          labels[idx]=prettyAct(name);
+          meta[idx] = { id: labels[idx], type: 'act', cluster:k, clusterName: CLUSTER_NAMES[k] };
+        }
+        idx++;
+      }
+    }
+    
+    // If there are unallocated points (rounding error, etc.), allocate to cluster 0 (Nocturnal)
+    for(;idx<N;idx++){
+      const k2=0; // Allocate to cluster 0 (Nocturnal)
+      const p2=sampleInBall(centers[k2],RADIUS,SIGMA);
+      positions[idx*3]=p2.x; positions[idx*3+1]=p2.y; positions[idx*3+2]=p2.z;
+      clusterOf[idx]=k2;
+
+      const ty2 = typesPool.pop() || 'act';
+      typeOf[idx]=ty2;
+
+      if (ty2==='user'){
+        const uid2 = 'U-' + String(idx).padStart(5,'0');
+        labels[idx]=uid2;
+        meta[idx] = { id: uid2, type:'user', cluster:k2, clusterName: CLUSTER_NAMES[k2], group: Math.floor(idx/20) };
+      } else if (ty2==='attr'){
+        const name2 = ATTR_NAMES[ai % Math.max(ATTR_NAMES.length,1)] || '속성';
+        ai++;
+        labels[idx]=prettyAttr(name2);
+        meta[idx] = { id: labels[idx], type:'attr', cluster:k2, clusterName: CLUSTER_NAMES[k2] };
+      } else {
+        const name3 = ACT_NAMES[ci % Math.max(ACT_NAMES.length,1)] || '행동';
+        ci++;
+        labels[idx]=prettyAct(name3);
+        meta[idx] = { id: labels[idx], type:'act', cluster:k2, clusterName: CLUSTER_NAMES[k2] };
+      }
+    }
+
+    synthesizeDeviceFlags();
+    applyColors();
+    geom.attributes.position.needsUpdate=true;
+    clearSelection();
+    mat.size=SIZE; mat.needsUpdate=true;
+    renderOnce(); syncLabels();
+  }
+
+  /* ====== Selection/Tooltip ====== */
+  function clearSelection(){
+    if(!selGeom || N === 0) return; // Added N === 0 condition
+    selGeom.setDrawRange(0,0);
+    var a = selGeom.getAttribute("position");
+    if(a) a.needsUpdate=true;
+  }
+  let lastSelection = null;
+  const tooltip=document.getElementById("tooltip");
+  const PICK_RADIUS_PX=16;
+  const _v3=new THREE.Vector3();
+  function getViewport(){ const v=new THREE.Vector2(); renderer.getSize(v); return {w:v.x,h:v.y}; }
+  function projectToScreen(i){
+    if (N === 0 || i < 0 || i >= N) return {x:0, y:0, z:0}; // Return default when no data
+    _v3.set(positions[i*3],positions[i*3+1],positions[i*3+2]).project(camera);
+    const vh=getViewport();
+    return {x:(_v3.x*0.5+0.5)*vh.w, y:(-_v3.y*0.5+0.5)*vh.h, z:_v3.z};
+  }
+  function findClosestPoint(px,py,r){
+    if (N === 0) return -1; // Don't search when no data
+    const rad=(r||PICK_RADIUS_PX); const r2=rad*rad; let best=-1, bestD2=Infinity;
+    for(let i=0;i<N;i++){
+      const p=projectToScreen(i);
+      if(p.z<-1||p.z>1) continue;
+      const dx=p.x-px, dy=p.y-py;
+      const d2=dx*dx+dy*dy;
+      if(d2<=r2 && d2<bestD2){ bestD2=d2; best=i; }
+    }
+    return best;
+  }
+  let hoverIndex=-1;
+  window.addEventListener("pointermove", function(e){
+    if(!renderer || !renderer.domElement || N === 0) return; // Added N === 0 condition
+    const rect=renderer.domElement.getBoundingClientRect();
+    const px=e.clientX-rect.left, py=e.clientY-rect.top;
+    hoverIndex=findClosestPoint(px,py,PICK_RADIUS_PX);
+    if(hoverIndex!==-1){ showTooltip(hoverIndex,e.clientX,e.clientY); } else { hideTooltip(); }
+  });
+
+  function showTooltip(i, x, y){
+    if (N === 0 || i < 0 || i >= N || i >= LABEL_LIMIT){ hideTooltip(); return; } // Added N === 0 condition and index validity
+    const m = meta[i];
+    tooltip.style.left = String(x+12) + "px"; tooltip.style.top = String(y-12) + "px";
+    if (m.type === 'user'){
+      const d = device[i];
+      const dev = [d.tv?'TV✓':'TV–', d.mobile?'Mobile✓':'Mobile–', d.ipad?'iPad✓':'iPad–', d.fridge?'Fridge✓':'Fridge–', d.washer?'Washer✓':'Washer–'].join(' · ');
+      tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>Type: User · Cluster: '+m.clusterName+'<br/>Devices: '+dev;
+    } else if (m.type === 'attr'){
+      tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>Type: Attribute(Inferred) · Cluster: '+m.clusterName;
+    } else {
+      tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>Type: Action · Cluster: '+m.clusterName;
+    }
+    tooltip.style.display='block';
+  }
+  function hideTooltip(){ tooltip.style.display='none'; }
+  function indicesWhere(pred){
+    if (N === 0) return []; // Return empty array when no data
+    const arr=[]; for(let i=0;i<N;i++) if(pred(i)) arr.push(i); return arr;
+  }
+
+  let selectionMode = 'point';
+  const selPointEl = document.getElementById('selPoint');
+  const selClusterEl = document.getElementById('selCluster');
+  if (selPointEl) selPointEl.addEventListener('change', function(e){ if(e.target.checked) selectionMode='point'; });
+  if (selClusterEl) selClusterEl.addEventListener('change', function(e){ if(e.target.checked) selectionMode='cluster'; });
+
+  function updateInspector(singleIndex, indices){
+    const panel = document.getElementById('inspector');
+    if (!panel) return;
+
+    if (N === 0) { // Show initial message when N is 0
+      panel.innerHTML = '<h4>Data Not Loaded</h4><div class="muted">Please select an experimental condition to load data.</div>';
+      return;
+    }
+
+    if (typeof singleIndex === 'undefined') singleIndex = null;
+    if (!indices) indices = null;
+
+    if (singleIndex===null && !indices){ panel.innerHTML = '<h4>No Selection</h4><div class="muted">Please select a point or cluster.</div>'; return; }
+    if (singleIndex!==null){
+      if (singleIndex < 0 || singleIndex >= N) { // Index validity check
+        panel.innerHTML = '<h4>Selection Error</h4><div class="muted">Invalid point selection.</div>';
+        return;
+      }
+      const m=meta[singleIndex];
+      if (m.type==='user'){
+        const d=device[singleIndex];
+        panel.innerHTML = '<h4>'+m.id+'</h4>'
+          + '<div>Type: <b>User</b> · Cluster: <b>'+m.clusterName+'</b></div>'
+          + '<div class="muted">Group: '+m.group+'</div>'
+          + '<div style="margin-top:6px">Devices: '+[d.tv?'TV✓':'TV–', d.mobile?'Mobile✓':'Mobile–', d.ipad?'iPad✓':'iPad–', d.fridge?'Fridge✓':'Fridge–', d.washer?'Washer✓':'Washer–'].join(' · ')+'</div>';
+      } else if (m.type==='attr'){
+        panel.innerHTML = '<h4>'+m.id+'</h4><div>Type: <b>Attribute(Inferred)</b> · Cluster: <b>'+m.clusterName+'</b></div>';
+      } else {
+        panel.innerHTML = '<h4>'+m.id+'</h4><div>Type: <b>Action</b> · Cluster: <b>'+m.clusterName+'</b></div>';
+      }
+      return;
+    }
+    // Cluster selection logic
+    if (!indices || indices.length === 0 || clusterOf[indices[0]] === undefined) { // Cluster data validity check
+        panel.innerHTML = '<h4>Selection Error</h4><div class="muted">Selected cluster data is invalid.</div>';
+        return;
+    }
+    const k = clusterOf[indices[0]]; const name = CLUSTER_NAMES[k];
+    const metrics = CLUSTER_METRICS[k]; // Get quantitative data per cluster
+    const userIdx = indices.filter(function(i){ return typeOf[i]==='user'; });
+    const n = userIdx.length || 1;
+    let c={tv:0,mobile:0,ipad:0,fridge:0,washer:0};
+    userIdx.forEach(function(i){ const d=device[i]; c.tv+=d.tv?1:0; c.mobile+=d.mobile?1:0; c.ipad+=d.ipad?1:0; c.fridge+=d.fridge?1:0; c.washer+=d.washer?1:0; });
+    function pct(x){ return Math.round(100*x/n)+'%'; }
+    panel.innerHTML = '<h4>'+metrics.name+' Cluster (Users n='+n+')</h4>'
+      + '<div>Average Night Usage Interval: '+metrics.night_interval_min+' min</div>'
+      + '<div>Night Refrigerator Opens: '+metrics.fridge_opens_night+' times</div>'
+      + '<div style="margin-top:6px">Primary Devices: TV '+pct(c.tv)+' · Mobile '+pct(c.mobile)+' · iPad '+pct(c.ipad)+' · Fridge '+pct(c.fridge)+' · Washer '+pct(c.washer)+'</div>';
+  }
+  updateInspector(); // Show "Data Not Loaded" message on initial load since `N=0`
+
+  renderer.domElement.addEventListener('click', function(e){
+  if(N === 0) return; // Don't handle click events when no data
+
+  if(hoverIndex===-1){
+    clearSelection(); updateInspector(); log('click',{hoverIndex:-1});
+    return;
+  }
+  // Validate hoverIndex
+  if (hoverIndex < 0 || hoverIndex >= N) {
+      console.warn("Click on invalid hoverIndex:", hoverIndex);
+      clearSelection(); updateInspector();
+      return;
+  }
+
+  if (selectionMode==='cluster' || e.shiftKey){
+    const k=clusterOf[hoverIndex];
+    const idxs = indicesWhere(function(i){ return clusterOf[i]===k; });
+    const out=selGeom.getAttribute('position').array;
+    let cnt=0;
+    for (var ii=0; ii<idxs.length; ii++){
+      var i=idxs[ii];
+      out[cnt*3]=positions[i*3];
+      out[cnt*3+1]=positions[i*3+1];
+      out[cnt*3+2]=positions[i*3+2];
+      cnt++;
+    }
+    selGeom.setDrawRange(0,cnt);
+    selGeom.getAttribute('position').needsUpdate=true;
+    lastSelection=idxs;
+    log('click',{mode:'cluster', hoverIndex:hoverIndex, cluster:k});
+    updateInspector(null, idxs);
+  } else {
+    const out2=selGeom.getAttribute('position').array;
+    out2[0]=positions[hoverIndex*3];
+    out2[1]=positions[hoverIndex*3+1];
+    out2[2]=positions[hoverIndex*3+2];
+    selGeom.setDrawRange(0,1);
+    selGeom.getAttribute('position').needsUpdate=true;
+    lastSelection=[hoverIndex];
+    log('click',{mode:'point', hoverIndex:hoverIndex, cluster:clusterOf[hoverIndex]});
+    updateInspector(hoverIndex, null);
+  }
+});
+
+  /* ====== Resize/Loop ====== */
+  function resize(){ const w=stageEl.clientWidth, h=stageEl.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  addEventListener("resize", resize); resize();
+  function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); }
+  function renderOnce(){ renderer.render(scene, camera); }
+  animate();
+
+  /* ====== Task Panel ====== */
+  const TASKS = [
+    "Find and capture the top 3 groups with frequent refrigerator openings after midnight.",
+    "Compare the night usage interval (minutes) of the 'Nocturnal' cluster and 'Family-oriented' cluster and take notes.",
+    "Find and verify the 'Interest › Gamer-MobileGame' attribute and 'Refrigerator · FridgeDoor · LongTime · Open' action inside the 'Nocturnal' cluster using tooltips."
+  ];
+  function mountTasks(){
+    const el=document.getElementById("taskPanel");
+    if(!CFG.guided){
+      el.innerHTML = "<h4>Free Exploration</h4><div>Find and capture 1 interesting pattern related to night refrigerator usage.</div>";
+      return;
+    }
+    let idx=0;
+    function render(){ el.innerHTML = '<h4>Guided Task '+(idx+1)+'/'+TASKS.length+'</h4><div>'+TASKS[idx]+'</div><button class="btn btnNext" id="nextStep" type="button">'+(idx<TASKS.length-1?'Next':'Complete')+'</button>'; }
+    render();
+    el.addEventListener("click", function(e){
+      const t = e.target;
+      if (t && t.id === "nextStep"){
+        log("guide_next", {step: idx+1});
+        idx++;
+        if(idx>=TASKS.length){
+          // Previous: el.innerHTML = "<div>Thank you. Click complete to proceed to survey.</div>";
+          // Modified: Display message with a 'disabled' complete button.
+          el.innerHTML = '<h4>Guided Tasks Complete</h4><div>Thank you. The experiment has ended.</div><button class="btn btnNext" type="button" style="margin-top:8px;" disabled>Completed</button>';
+        }
+        else render();
+      }
+    });
+  }
+
+  /* ====== Log ====== */
+  const PID = (function(){ if (!localStorage.pid) localStorage.pid = "p"+Math.random().toString(36).slice(2); return localStorage.pid; })();
+  const logs = [];
+  function nowISO(){ return new Date().toISOString(); }
+  function log(t, det){ if(!det) det={}; logs.push(Object.assign({ts:nowISO(), pid:PID, cond:COND, event_type:t}, det)); }
+  controls.addEventListener("change", function(){ log("camera", {pos: camera.position.toArray()}); });
+  // Hover event logging is very frequent, so comment out or adjust frequency as needed.
+  // window.addEventListener("pointermove", function(){ if(N > 0 && hoverIndex>-1) log("hover", {i:hoverIndex}); });
+  document.getElementById("btnDownload").onclick=function(){
+    if (!logs.length){ alert("No logs to save."); return; }
+    // Collect headers
+    var keysSet = new Set();
+    for (var i=0;i<logs.length;i++){
+      var o=logs[i];
+      for (var k in o){
+        if (Object.prototype.hasOwnProperty.call(o,k)) {
+          keysSet.add(k);
+        }
+      }
+    }
+    var header = Array.from(keysSet);
+    const NEWLINE = '\n';
+    var rows = header.join(",") + NEWLINE;
+    for (var r=0;r<logs.length;r++){
+      var rowA = [];
+      for (var c=0;c<header.length;c++){
+        var key = header[c];
+        var val = (logs[r][key] === undefined || logs[r][key] === null) ? "" : logs[r][key];
+        rowA.push(JSON.stringify(val));
+      }
+      rows += rowA.join(",") + NEWLINE;
+    }
+    const blob = new Blob([rows], {type:"text/csv"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download='logs_'+COND+'_'+PID+'.csv';
+    a.click();
+  };
+
+  /* ====== Apply Condition (Selected from UI) ====== */
+  function applyCondition(cond, opt){
+    if(!MAP[cond]){ alert("Invalid condition"); return; }
+    const debug = opt && opt.debug ? true : false;
+    COND=cond; CFG=MAP[cond]; DEBUG=debug; SIZE=CFG.size; LABEL_LIMIT=CFG.labelLimit; N=CFG.N; SIGMA=CFG.sigma;
+    var dbg = document.getElementById("debugControls");
+    if (dbg) dbg.style.display = DEBUG ? "block" : "none";
+
+    rebuildBuffers(N); // Rebuild buffers based on N value
+    regenerate();      // Fill buffers with actual data
+    showSphereWire(RADIUS);
+    mountTasks();
+    log("session_start", {cfg:CFG});
+  }
+
+  // Modal: Condition Selection·Lock
+  const setupModal=document.getElementById("setupModal");
+  function startWith(cond){
+    const debug = document.getElementById("debugChk").checked;
+    try{ applyCondition(cond,{debug:debug}); }
+    catch(err){ console.error(err); alert('Initialization Error: '+(err && err.message ? err.message : err)); return; }
+    if (setupModal && setupModal.parentNode) setupModal.parentNode.removeChild(setupModal);
+  }
+  const btnLCG = document.getElementById('btnLCG'); if(btnLCG) btnLCG.addEventListener('click', function(){ startWith('LC-G'); });
+  const btnLCS = document.getElementById('btnLCS'); if(btnLCS) btnLCS.addEventListener('click', function(){ startWith('LC-S'); });
+  const btnHCG = document.getElementById('btnHCG'); if(btnHCG) btnHCG.addEventListener('click', function(){ startWith('HC-G'); });
+  const btnHCS = document.getElementById('btnHCS'); if(btnHCS) btnHCS.addEventListener('click', function(){ startWith('HC-S'); });
+
+  // Reopen with Researcher PIN
+  const gear=document.getElementById("gear");
+  const pinInput=document.getElementById("pinInput");
+  const savePinBtn=document.getElementById("savePin");
+  let ADMIN_PIN = localStorage._exp_pin || "";
+  savePinBtn.onclick=function(){ ADMIN_PIN = pinInput.value || ""; localStorage._exp_pin = ADMIN_PIN; alert("PIN saved"); };
+  gear.onclick=function(){
+    const ok = ADMIN_PIN ? (prompt("Enter Researcher PIN") === ADMIN_PIN) : confirm("PIN not set. Open now?");
+    if(ok){ location.reload(); }
+  };
+
+  /* ====== Debug Controls (Pilot) ====== */
+  const lowBtn=document.getElementById("lowLoad");
+  const highBtn=document.getElementById("highLoad");
+  const nInput=document.getElementById("nInput");
+  const applyN=document.getElementById("applyN");
+  if(lowBtn){ lowBtn.onclick=function(){ LABEL_LIMIT=100; SIZE=3.0; rebuildBuffers(500); regenerate(); log("debug_low"); }; }
+  if(highBtn){ highBtn.onclick=function(){ LABEL_LIMIT=Infinity; SIZE=3.6; rebuildBuffers(5000); regenerate(); log("debug_high"); }; }
+  if(applyN){ applyN.onclick=function(){ const v=parseInt(nInput.value,10); if(isNaN(v)||v<100||v>20000){ alert("N must be 100~20000"); return; } rebuildBuffers(v); regenerate(); log("debug_applyN", {N:v}); }; }
+
+  /* ====== Initial Render/Error Guard ====== */
+  window.addEventListener('error', function(e){ try{ console.error(e.error||e.message); }catch(_){} alert('Script Error: '+(e.error && e.error.message ? e.error.message : e.message)); });
+  syncLabels();
+  resize();
+  // Don't call regenerate() directly since initial N is 0.
+  // applyCondition will call it when user selects a condition from the modal.
+</script>
+</body>
+</html>
