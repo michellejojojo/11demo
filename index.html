@@ -633,24 +633,6 @@ function log(t, det){
 }
 
   
-    var header = Array.from(keysSet);
-    const NEWLINE = '\n';
-    var rows = header.join(",") + NEWLINE;
-    for (var r=0;r<logs.length;r++){
-      var rowA = [];
-      for (var c=0;c<header.length;c++){
-        var key = header[c];
-        var val = (logs[r][key] === undefined || logs[r][key] === null) ? "" : logs[r][key];
-        rowA.push(JSON.stringify(val));
-      }
-      rows += rowA.join(",") + NEWLINE;
-    }
-    const blob = new Blob([rows], {type:"text/csv"});
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download='logs_'+COND+'_'+PID+'.csv';
-    a.click();
-  };
 
   /* ====== Apply Condition (Selected from UI) ====== */
   function applyCondition(cond, opt){
