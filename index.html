@@ -607,22 +607,34 @@
   const PID = qs.get("panel_id") || "test_pid";
   const logs = [];
   function nowISO(){ return new Date().toISOString(); }
-  function log(t, det){ if(!det) det={}; logs.push(Object.assign({ts:nowISO(), pid:PID, cond:COND, event_type:t}, det)); }
-  controls.addEventListener("change", function(){ log("camera", {pos: camera.position.toArray()}); });
-  // Hover event logging is very frequent, so comment out or adjust frequency as needed.
-  // window.addEventListener("pointermove", function(){ if(N > 0 && hoverIndex>-1) log("hover", {i:hoverIndex}); });
-  document.getElementById("btnDownload").onclick=function(){
-    if (!logs.length){ alert("No logs to save."); return; }
-    // Collect headers
-    var keysSet = new Set();
-    for (var i=0;i<logs.length;i++){
-      var o=logs[i];
-      for (var k in o){
-        if (Object.prototype.hasOwnProperty.call(o,k)) {
-          keysSet.add(k);
-        }
-      }
-    }
+  function nowISO(){ return new Date().toISOString(); }
+
+function log(t, det){
+  if(!det) det={};
+
+  const logData = Object.assign({
+    ts: nowISO(),
+    panel_id: PID,
+    condition: COND,
+    event: t
+  }, det);
+
+  logs.push(logData);
+
+  // 👇 이 부분 추가 (핵심)
+  fetch("https://script.google.com/macros/s/AKfycbyt6itRYCcrLzFk9jIRfOFz_mMyOBX4DQ-oDyFaRrRk9H0zlTO1XbvQNwV9LStZQIdH/exec", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      panel_id: PID,
+      condition: COND,
+      event: t,
+      detail: det
+    })
+  });
+}
+
+  
     var header = Array.from(keysSet);
     const NEWLINE = '\n';
     var rows = header.join(",") + NEWLINE;
