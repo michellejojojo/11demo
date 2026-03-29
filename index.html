@@ -606,7 +606,7 @@
   const qs = new URLSearchParams(location.search);
   const PID = qs.get("panel_id") || "test_pid";
   const logs = [];
-  function nowISO(){ return new Date().toISOString(); }
+ function nowISO(){ return new Date().toISOString(); }
 
 function log(t, det){
   if(!det) det={};
@@ -620,7 +620,6 @@ function log(t, det){
 
   logs.push(logData);
 
-  // 👇 이 부분 추가 (핵심)
   fetch("https://script.google.com/macros/s/AKfycbyt6itRYCcrLzFk9jIRfOFz_mMyOBX4DQ-oDyFaRrRk9H0zlTO1XbvQNwV9LStZQIdH/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
