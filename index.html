@@ -670,16 +670,6 @@
   const btnHCG = document.getElementById('btnHCG'); if(btnHCG) btnHCG.addEventListener('click', function(){ startWith('HC-G'); });
   const btnHCS = document.getElementById('btnHCS'); if(btnHCS) btnHCS.addEventListener('click', function(){ startWith('HC-S'); });
 
-  // Reopen with Researcher PIN
-  const gear=document.getElementById("gear");
-  const pinInput=document.getElementById("pinInput");
-  const savePinBtn=document.getElementById("savePin");
-  let ADMIN_PIN = localStorage._exp_pin || "";
-  savePinBtn.onclick=function(){ ADMIN_PIN = pinInput.value || ""; localStorage._exp_pin = ADMIN_PIN; alert("PIN saved"); };
-  gear.onclick=function(){
-    const ok = ADMIN_PIN ? (prompt("Enter Researcher PIN") === ADMIN_PIN) : confirm("PIN not set. Open now?");
-    if(ok){ location.reload(); }
-  };
 
   /* ====== Debug Controls (Pilot) ====== */
   const lowBtn=document.getElementById("lowLoad");
