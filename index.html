@@ -679,7 +679,10 @@ fetch("https://script.google.com/macros/s/AKfycbyrgYV9VXZCELJxp12maCn8F4McWM42aW
   resize();
   // Don't call regenerate() directly since initial N is 0.
   // applyCondition will call it when user selects a condition from the modal.
-  applyCondition("LC-G");
+  const qs = new URLSearchParams(location.search);
+const condition = qs.get("condition") || "LC-G";
+applyCondition(condition);
+  
   updateInspector();
 </script>
 </body>
