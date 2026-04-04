@@ -83,7 +83,6 @@
   import * as THREE from "three";
   import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-  /* ====== Condition Map ====== */
   const MAP = {
     "LC-G": { N: 500,  labelLimit: 100, size: 3.0, overlay: false, guided: true,  sigma: 10 },
     "LC-S": { N: 500,  labelLimit: 100, size: 3.0, overlay: false, guided: false, sigma: 10 },
@@ -91,7 +90,6 @@
     "HC-S": { N: 5000, labelLimit: Infinity, size: 3.6, overlay: true,  guided: false, sigma: 35 }
   };
 
-  /* ====== Global State ====== */
   let COND = "LC-G";
   let CFG = MAP[COND];
   let DEBUG = false;
@@ -105,7 +103,6 @@
   function rnd(){ seed = (seed*1664525 + 1013904223) >>> 0; return seed/4294967296; }
   function R(){ return USE_SEEDED_RANDOM ? rnd() : Math.random(); }
 
-  /* ====== Three.js Basics ====== */
   const stageEl = document.getElementById("stage");
   const renderer = new THREE.WebGLRenderer({ antialias:true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -133,7 +130,6 @@
     sprVal.textContent = String(SIGMA);
   }
 
-  /* ====== Legend/Colors ====== */
   const TYPE_COLORS = {
     user:  new THREE.Color(0xb3b3b3),
     attr:  new THREE.Color(0xff2bb3),
@@ -162,21 +158,17 @@
       const chip = document.createElement('div');
       chip.className = 'chip';
       chip.style.pointerEvents = 'none';
-
       const dot = document.createElement('span');
       dot.className = 'dot';
       dot.style.background = '#' + item.color.getHexString();
-
       const label = document.createElement('span');
       label.textContent = item.label;
-
       chip.appendChild(dot);
       chip.appendChild(label);
       legend.appendChild(chip);
     }
   })();
 
-  /* ====== Raw Name Lists ====== */
   const ATTR_NAMES = [
     "AttributeScore_HouseholdType_ParentOfPreschooler(4-5yrs)",
     "AttributeScore_HouseholdType_ParentStatus",
@@ -211,75 +203,30 @@
     "LateNight_Refrigerator_Open"
   ];
 
-  /* ====== Translation Helpers ====== */
-  const ATTR_CATEGORY_MAP = {
-    HouseholdType: '가구 특성',
-    Interest: '관심사'
-  };
+  const ATTR_CATEGORY_MAP = { HouseholdType: '가구 특성', Interest: '관심사' };
 
   const ATTR_TOKEN_MAP = {
-    ParentOfPreschooler: '미취학 자녀 양육 가구',
-    ParentStatus: '부모 여부',
-    ParentOfAdult: '성인 자녀가 있는 가구',
-    Senior: '시니어 가구',
-    ApartmentResident: '아파트 거주 가구',
-    ParentOfInfant: '영아 양육 가구',
-    TVEnthusiast: 'TV 관심도 높음',
-    TVGameProgram: 'TV 게임 프로그램 선호',
-    Health: '건강',
-    HealthCare: '헬스케어',
-    Gamer: '게이머',
-    MobileGame: '모바일 게임',
-    Beauty: '뷰티',
-    SkinCare: '스킨케어',
-    Education: '교육',
-    University: '대학교',
-    Graduate: '대학원',
-    RealEstate: '부동산',
-    Apartment: '아파트',
-    Shopping: '쇼핑',
-    Luxury: '명품',
-    MediaEntertainment: '미디어·엔터테인먼트',
-    Food: '식품',
-    KoreanCuisine: '한식',
-    MobileGameUsage: '모바일 게임 이용'
+    ParentOfPreschooler: '미취학 자녀 양육 가구', ParentStatus: '부모 여부',
+    ParentOfAdult: '성인 자녀가 있는 가구', Senior: '시니어 가구',
+    ApartmentResident: '아파트 거주 가구', ParentOfInfant: '영아 양육 가구',
+    TVEnthusiast: 'TV 관심도 높음', TVGameProgram: 'TV 게임 프로그램 선호',
+    Health: '건강', HealthCare: '헬스케어', Gamer: '게이머', MobileGame: '모바일 게임',
+    Beauty: '뷰티', SkinCare: '스킨케어', Education: '교육', University: '대학교',
+    Graduate: '대학원', RealEstate: '부동산', Apartment: '아파트', Shopping: '쇼핑',
+    Luxury: '명품', MediaEntertainment: '미디어·엔터테인먼트', Food: '식품',
+    KoreanCuisine: '한식', MobileGameUsage: '모바일 게임 이용'
   };
 
   const ACTION_TOKEN_MAP = {
-    Washer: '세탁기',
-    AllergyCare: '알레르기 케어',
-    LargeLoad: '대용량',
-    Wash: '세탁',
-    AI: 'AI',
-    SmallLoad: '소량',
-    Dryer: '건조기',
-    Dry: '건조',
-    Styler: '스타일러',
-    Sterilize: '살균',
-    MicrowaveOven: '광파오븐',
-    Oven: '오븐',
-    Cook: '조리',
-    Refrigerator: '냉장고',
-    FridgeDoor: '냉장실 문',
-    LongTime: '장시간',
-    Open: '열림',
-    Dishwasher: '식기세척기',
-    Auto: '자동',
-    Cooktop: '쿡탑',
-    MultipleBurners: '다중 화구',
-    HighHeat: '고화력',
-    Use: '사용',
-    WaterPurifier: '정수기',
-    HotWater: '온수',
-    MediumAmount: '중간 용량',
-    Dispense: '출수',
-    AirConditioner: '에어컨',
-    TempChangeFrequent: '온도 변경 잦음',
-    Cooling: '냉방',
-    AirPurifier: '공기청정기',
-    ShortTime: '단시간',
-    AirPurify: '공기 청정',
-    LateNight: '심야'
+    Washer: '세탁기', AllergyCare: '알레르기 케어', LargeLoad: '대용량', Wash: '세탁',
+    AI: 'AI', SmallLoad: '소량', Dryer: '건조기', Dry: '건조', Styler: '스타일러',
+    Sterilize: '살균', MicrowaveOven: '광파오븐', Oven: '오븐', Cook: '조리',
+    Refrigerator: '냉장고', FridgeDoor: '냉장실 문', LongTime: '장시간', Open: '열림',
+    Dishwasher: '식기세척기', Auto: '자동', Cooktop: '쿡탑', MultipleBurners: '다중 화구',
+    HighHeat: '고화력', Use: '사용', WaterPurifier: '정수기', HotWater: '온수',
+    MediumAmount: '중간 용량', Dispense: '출수', AirConditioner: '에어컨',
+    TempChangeFrequent: '온도 변경 잦음', Cooling: '냉방', AirPurifier: '공기청정기',
+    ShortTime: '단시간', AirPurify: '공기 청정', LateNight: '심야'
   };
 
   function splitAndTranslate(part, dict, fallbackSeparator = ' · ') {
@@ -293,22 +240,13 @@
     const parts = s.split('_');
     const category = parts.shift() || '';
     const translatedCategory = ATTR_CATEGORY_MAP[category] || category;
-
     if (parts.length === 0) return translatedCategory || '속성';
-
     const translatedParts = parts.map(part => {
       if (ATTR_TOKEN_MAP[part]) return ATTR_TOKEN_MAP[part];
-
-      if (part.includes('-')) {
-        return part.split('-').map(x => ATTR_TOKEN_MAP[x] || x).join(' › ');
-      }
-      if (part.includes('/')) {
-        return part.split('/').map(x => ATTR_TOKEN_MAP[x] || x).join('/');
-      }
-
+      if (part.includes('-')) return part.split('-').map(x => ATTR_TOKEN_MAP[x] || x).join(' › ');
+      if (part.includes('/')) return part.split('/').map(x => ATTR_TOKEN_MAP[x] || x).join('/');
       return ATTR_TOKEN_MAP[part] || part;
     });
-
     return [translatedCategory, ...translatedParts].join(' › ');
   }
 
@@ -319,24 +257,10 @@
     return translated.join(' · ');
   }
 
-  /* ====== Buffers ====== */
   let positions, colors, clusterOf, labels, typeOf, meta, device;
   let geom, mat, points, selGeom, selMat, selPoints, sphereWire;
 
-  function showSphereWire(R){
-    return;
-    if (sphereWire){
-      scene.remove(sphereWire);
-      sphereWire.geometry.dispose();
-      sphereWire.material.dispose();
-      sphereWire = null;
-    }
-    if (!CFG.overlay || R<=0) return;
-    const geo = new THREE.SphereGeometry(R, 24, 16);
-    const m = new THREE.MeshBasicMaterial({ color:0x333333, wireframe:true });
-    sphereWire = new THREE.Mesh(geo, m);
-    scene.add(sphereWire);
-  }
+  function showSphereWire(R){ return; }
 
   function spriteTex(size){
     if(!size) size=32;
@@ -346,12 +270,9 @@
     const r=size/2;
     ctx.clearRect(0,0,size,size);
     ctx.fillStyle="white";
-    ctx.beginPath();
-    ctx.arc(r,r,r,0,Math.PI*2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(r,r,r,0,Math.PI*2); ctx.fill();
     const tex=new THREE.CanvasTexture(c);
-    tex.minFilter=THREE.LinearFilter;
-    tex.magFilter=THREE.LinearFilter;
+    tex.minFilter=THREE.LinearFilter; tex.magFilter=THREE.LinearFilter;
     tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
     return tex;
   }
@@ -359,98 +280,47 @@
   const sprite = spriteTex(32);
 
   function disposePoints(){
-    if(points){
-      scene.remove(points);
-      geom.dispose();
-      mat.dispose();
-      points=null;
-    }
-    if(selPoints){
-      scene.remove(selPoints);
-      selGeom.dispose();
-      selMat.dispose();
-      selPoints=null;
-    }
+    if(points){ scene.remove(points); geom.dispose(); mat.dispose(); points=null; }
+    if(selPoints){ scene.remove(selPoints); selGeom.dispose(); selMat.dispose(); selPoints=null; }
   }
 
   function rebuildBuffers(newN){
-    N = newN|0;
-    if (N < 100) N = 100;
+    N = newN|0; if (N < 100) N = 100;
     disposePoints();
-
     if (N === 0) {
-      positions=new Float32Array(0);
-      colors=new Float32Array(0);
-      clusterOf=new Int32Array(0);
-      labels=new Array(0);
-      typeOf=new Array(0);
+      positions=new Float32Array(0); colors=new Float32Array(0);
+      clusterOf=new Int32Array(0); labels=new Array(0); typeOf=new Array(0);
     } else {
-      positions=new Float32Array(N*3);
-      colors=new Float32Array(N*3);
-      clusterOf=new Int32Array(N);
-      labels=new Array(N);
-      typeOf=new Array(N);
+      positions=new Float32Array(N*3); colors=new Float32Array(N*3);
+      clusterOf=new Int32Array(N); labels=new Array(N); typeOf=new Array(N);
     }
-
     geom = new THREE.BufferGeometry();
     geom.setAttribute("position", new THREE.BufferAttribute(positions,3));
     geom.setAttribute("color", new THREE.BufferAttribute(colors,3));
-
-    mat = new THREE.PointsMaterial({
-      size: SIZE,
-      map:sprite,
-      alphaTest:0.5,
-      transparent:true,
-      vertexColors:true,
-      sizeAttenuation:true
-    });
-
-    points = new THREE.Points(geom, mat);
-    scene.add(points);
-
+    mat = new THREE.PointsMaterial({ size: SIZE, map:sprite, alphaTest:0.5, transparent:true, vertexColors:true, sizeAttenuation:true });
+    points = new THREE.Points(geom, mat); scene.add(points);
     selGeom = new THREE.BufferGeometry();
     selGeom.setAttribute("position", new THREE.BufferAttribute(new Float32Array(N*3),3));
-
-    selMat = new THREE.PointsMaterial({
-      size: SIZE*1.8,
-      map:sprite,
-      alphaTest:0.5,
-      transparent:true,
-      color:0xffffff,
-      sizeAttenuation:true
-    });
-
-    selPoints = new THREE.Points(selGeom, selMat);
-    scene.add(selPoints);
+    selMat = new THREE.PointsMaterial({ size: SIZE*1.8, map:sprite, alphaTest:0.5, transparent:true, color:0xffffff, sizeAttenuation:true });
+    selPoints = new THREE.Points(selGeom, selMat); scene.add(selPoints);
   }
 
-  /* ====== Data Generation ====== */
   function randN(){ return (R()*2-1)+(R()*2-1)+(R()*2-1); }
-
   function randOnSphere(){
     const u=R()*2*Math.PI, v=Math.acos(R()*2-1);
     return new THREE.Vector3(Math.sin(v)*Math.cos(u), Math.sin(v)*Math.sin(u), Math.cos(v));
   }
-
   function sampleInBall(center, Rr, sigma){
-    const x=center.x+randN()*sigma;
-    const y=center.y+randN()*sigma;
-    const z=center.z+randN()*sigma;
-    return new THREE.Vector3(x,y,z);
+    return new THREE.Vector3(center.x+randN()*sigma, center.y+randN()*sigma, center.z+randN()*sigma);
   }
 
   function computeCenters(){
     const r=RADIUS*0.5;
     const base=[
-      new THREE.Vector3(1,1,1),
-      new THREE.Vector3(-1,1,-1),
-      new THREE.Vector3(1,-1,-1),
-      new THREE.Vector3(-1,-1,1)
+      new THREE.Vector3(1,1,1), new THREE.Vector3(-1,1,-1),
+      new THREE.Vector3(1,-1,-1), new THREE.Vector3(-1,-1,1)
     ].map(v => v.normalize().multiplyScalar(r));
-
-    for(let i=0;i<K;i++){
-      base[i].add(randOnSphere().multiplyScalar(RADIUS*0.08));
-    }
+    for(let i=0;i<K;i++) base[i].add(randOnSphere().multiplyScalar(RADIUS*0.08));
     return base;
   }
 
@@ -460,9 +330,7 @@
     for(let i=0;i<N;i++){
       const ty = typeOf[i] || 'user';
       const c = (ty==='user') ? TYPE_COLORS.user : (ty==='attr' ? TYPE_COLORS.attr : TYPE_COLORS.act);
-      colArr[i*3]   = c.r;
-      colArr[i*3+1] = c.g;
-      colArr[i*3+2] = c.b;
+      colArr[i*3]=c.r; colArr[i*3+1]=c.g; colArr[i*3+2]=c.b;
     }
     geom.getAttribute('color').needsUpdate = true;
   }
@@ -472,437 +340,264 @@
     device = new Array(N);
     for(let i=0;i<N;i++){
       const k = clusterOf[i];
-      let pTV = 0.25, pMobile = 0.45, pIPad = 0.30, pFridge = 0.85, pWasher = 0.78;
-      if (k===1){
-        pTV = 0.95;
-        pMobile = 0.80;
-        pIPad = 0.60;
-        pFridge = 0.92;
-        pWasher = 0.85;
-      }
-      device[i] = {
-        tv: R() < pTV,
-        mobile: R() < pMobile,
-        ipad: R() < pIPad,
-        fridge: R() < pFridge,
-        washer: R() < pWasher
-      };
+      let pTV=0.25,pMobile=0.45,pIPad=0.30,pFridge=0.85,pWasher=0.78;
+      if(k===1){ pTV=0.95;pMobile=0.80;pIPad=0.60;pFridge=0.92;pWasher=0.85; }
+      device[i] = { tv:R()<pTV, mobile:R()<pMobile, ipad:R()<pIPad, fridge:R()<pFridge, washer:R()<pWasher };
     }
   }
 
   function regenerate(){
-    if (N === 0) {
-      disposePoints();
-      showSphereWire(RADIUS);
-      clearSelection();
-      syncLabels();
-      return;
-    }
-
+    if (N === 0) { disposePoints(); showSphereWire(RADIUS); clearSelection(); syncLabels(); return; }
     showSphereWire(RADIUS);
     const centers = computeCenters();
-
     const clusterRatios = [0.45, 0.25, 0.15, 0.15];
     const clusterCounts = [];
     let allocatedTotal = 0;
-
-    for(let k=0; k<K; k++){
-      const count = Math.floor(N * clusterRatios[k]);
-      clusterCounts.push(count);
-      allocatedTotal += count;
-    }
-
+    for(let k=0;k<K;k++){ const count=Math.floor(N*clusterRatios[k]); clusterCounts.push(count); allocatedTotal+=count; }
     const remainder = N - allocatedTotal;
-    if(remainder > 0){
-      clusterCounts[0] += remainder;
-    }
+    if(remainder > 0) clusterCounts[0] += remainder;
 
     meta = new Array(N);
-
     const nUser = Math.max(1, Math.floor(N*0.25));
     const nAttr = Math.max(1, Math.floor(N*0.35));
     const typesPool = [];
     for(let i=0;i<nUser;i++) typesPool.push('user');
     for(let i=0;i<nAttr;i++) typesPool.push('attr');
     for(let i=typesPool.length;i<N;i++) typesPool.push('act');
-    for(let i2=typesPool.length-1;i2>0;i2--){
-      const j=Math.floor(R()*(i2+1));
-      const tmp=typesPool[i2];
-      typesPool[i2]=typesPool[j];
-      typesPool[j]=tmp;
-    }
+    for(let i2=typesPool.length-1;i2>0;i2--){ const j=Math.floor(R()*(i2+1)); const tmp=typesPool[i2]; typesPool[i2]=typesPool[j]; typesPool[j]=tmp; }
 
     let idx=0, ai=0, ci=0;
 
     if (idx < N) {
-      const k = 0;
-      const c = centers[k];
-      const p = sampleInBall(c, RADIUS, SIGMA);
+      const k=0, c=centers[k], p=sampleInBall(c,RADIUS,SIGMA);
       positions[idx*3]=p.x; positions[idx*3+1]=p.y; positions[idx*3+2]=p.z;
-      clusterOf[idx]=k;
-      typeOf[idx]='attr';
+      clusterOf[idx]=k; typeOf[idx]='attr';
       const rawName = "AttributeScore_Interest_Gamer-MobileGame";
       labels[idx] = prettyAttr(rawName);
-      meta[idx] = { rawId: rawName, id: labels[idx], type: 'attr', cluster:k, clusterName: CLUSTER_NAMES[k] };
-      typesPool.pop();
-      idx++;
+      meta[idx] = { rawId: rawName, id: labels[idx], type:'attr', cluster:k, clusterName: CLUSTER_NAMES[k] };
+      typesPool.pop(); idx++;
     }
-
     if (idx < N) {
-      const k = 0;
-      const c = centers[k];
-      const p = sampleInBall(c, RADIUS, SIGMA);
+      const k=0, c=centers[k], p=sampleInBall(c,RADIUS,SIGMA);
       positions[idx*3]=p.x; positions[idx*3+1]=p.y; positions[idx*3+2]=p.z;
-      clusterOf[idx]=k;
-      typeOf[idx]='act';
+      clusterOf[idx]=k; typeOf[idx]='act';
       const rawName = "Refrigerator_FridgeDoor_LongTime_Open";
       labels[idx] = prettyAct(rawName);
-      meta[idx] = { rawId: rawName, id: labels[idx], type: 'act', cluster:k, clusterName: CLUSTER_NAMES[k] };
-      typesPool.pop();
-      idx++;
+      meta[idx] = { rawId: rawName, id: labels[idx], type:'act', cluster:k, clusterName: CLUSTER_NAMES[k] };
+      typesPool.pop(); idx++;
     }
 
     for(let k=0;k<K && idx<N;k++){
-      const c=centers[k];
-      const countForThisCluster = clusterCounts[k];
-
+      const c=centers[k], countForThisCluster=clusterCounts[k];
       for(let i=0;i<countForThisCluster && idx<N;i++){
         const p=sampleInBall(c,RADIUS,SIGMA);
         positions[idx*3]=p.x; positions[idx*3+1]=p.y; positions[idx*3+2]=p.z;
         clusterOf[idx]=k;
-
         const ty = typesPool.pop() || 'act';
         typeOf[idx]=ty;
-
         if (ty==='user'){
-          const uid = 'U-' + String(idx).padStart(5,'0');
-          labels[idx]=uid;
-          meta[idx] = { id: uid, type: 'user', cluster:k, clusterName: CLUSTER_NAMES[k], group: Math.floor(idx/20) };
+          const uid='U-'+String(idx).padStart(5,'0'); labels[idx]=uid;
+          meta[idx] = { id:uid, type:'user', cluster:k, clusterName:CLUSTER_NAMES[k], group:Math.floor(idx/20) };
         } else if (ty==='attr'){
-          const rawName = ATTR_NAMES[ai % Math.max(ATTR_NAMES.length,1)] || '속성';
-          ai++;
+          const rawName=ATTR_NAMES[ai%Math.max(ATTR_NAMES.length,1)]||'속성'; ai++;
           labels[idx]=prettyAttr(rawName);
-          meta[idx] = { rawId: rawName, id: labels[idx], type: 'attr', cluster:k, clusterName: CLUSTER_NAMES[k] };
+          meta[idx] = { rawId:rawName, id:labels[idx], type:'attr', cluster:k, clusterName:CLUSTER_NAMES[k] };
         } else {
-          const rawName = ACT_NAMES[ci % Math.max(ACT_NAMES.length,1)] || '행동';
-          ci++;
+          const rawName=ACT_NAMES[ci%Math.max(ACT_NAMES.length,1)]||'행동'; ci++;
           labels[idx]=prettyAct(rawName);
-          meta[idx] = { rawId: rawName, id: labels[idx], type: 'act', cluster:k, clusterName: CLUSTER_NAMES[k] };
+          meta[idx] = { rawId:rawName, id:labels[idx], type:'act', cluster:k, clusterName:CLUSTER_NAMES[k] };
         }
         idx++;
       }
     }
-
     for(;idx<N;idx++){
-      const k2=0;
-      const p2=sampleInBall(centers[k2],RADIUS,SIGMA);
+      const k2=0, p2=sampleInBall(centers[k2],RADIUS,SIGMA);
       positions[idx*3]=p2.x; positions[idx*3+1]=p2.y; positions[idx*3+2]=p2.z;
       clusterOf[idx]=k2;
-
-      const ty2 = typesPool.pop() || 'act';
-      typeOf[idx]=ty2;
-
-      if (ty2==='user'){
-        const uid2 = 'U-' + String(idx).padStart(5,'0');
-        labels[idx]=uid2;
-        meta[idx] = { id: uid2, type:'user', cluster:k2, clusterName: CLUSTER_NAMES[k2], group: Math.floor(idx/20) };
-      } else if (ty2==='attr'){
-        const rawName2 = ATTR_NAMES[ai % Math.max(ATTR_NAMES.length,1)] || '속성';
-        ai++;
-        labels[idx]=prettyAttr(rawName2);
-        meta[idx] = { rawId: rawName2, id: labels[idx], type:'attr', cluster:k2, clusterName: CLUSTER_NAMES[k2] };
-      } else {
-        const rawName3 = ACT_NAMES[ci % Math.max(ACT_NAMES.length,1)] || '행동';
-        ci++;
-        labels[idx]=prettyAct(rawName3);
-        meta[idx] = { rawId: rawName3, id: labels[idx], type:'act', cluster:k2, clusterName: CLUSTER_NAMES[k2] };
-      }
+      const ty2=typesPool.pop()||'act'; typeOf[idx]=ty2;
+      if(ty2==='user'){ const uid2='U-'+String(idx).padStart(5,'0'); labels[idx]=uid2; meta[idx]={id:uid2,type:'user',cluster:k2,clusterName:CLUSTER_NAMES[k2],group:Math.floor(idx/20)}; }
+      else if(ty2==='attr'){ const rn=ATTR_NAMES[ai%Math.max(ATTR_NAMES.length,1)]||'속성'; ai++; labels[idx]=prettyAttr(rn); meta[idx]={rawId:rn,id:labels[idx],type:'attr',cluster:k2,clusterName:CLUSTER_NAMES[k2]}; }
+      else { const rn=ACT_NAMES[ci%Math.max(ACT_NAMES.length,1)]||'행동'; ci++; labels[idx]=prettyAct(rn); meta[idx]={rawId:rn,id:labels[idx],type:'act',cluster:k2,clusterName:CLUSTER_NAMES[k2]}; }
     }
-
-    synthesizeDeviceFlags();
-    applyColors();
+    synthesizeDeviceFlags(); applyColors();
     geom.attributes.position.needsUpdate=true;
-    clearSelection();
-    mat.size=SIZE;
-    mat.needsUpdate=true;
-    renderOnce();
-    syncLabels();
+    clearSelection(); mat.size=SIZE; mat.needsUpdate=true; renderOnce(); syncLabels();
   }
 
-  /* ====== Selection/Tooltip ====== */
   function clearSelection(){
-    if(!selGeom || N === 0) return;
+    if(!selGeom || N===0) return;
     selGeom.setDrawRange(0,0);
-    const a = selGeom.getAttribute("position");
-    if(a) a.needsUpdate=true;
+    const a=selGeom.getAttribute("position"); if(a) a.needsUpdate=true;
   }
 
   const tooltip=document.getElementById("tooltip");
   const PICK_RADIUS_PX=16;
   const _v3=new THREE.Vector3();
-
-  function getViewport(){
-    const v=new THREE.Vector2();
-    renderer.getSize(v);
-    return {w:v.x,h:v.y};
-  }
-
+  function getViewport(){ const v=new THREE.Vector2(); renderer.getSize(v); return {w:v.x,h:v.y}; }
   function projectToScreen(i){
-    if (N === 0 || i < 0 || i >= N) return {x:0, y:0, z:0};
+    if(N===0||i<0||i>=N) return {x:0,y:0,z:0};
     _v3.set(positions[i*3],positions[i*3+1],positions[i*3+2]).project(camera);
     const vh=getViewport();
     return {x:(_v3.x*0.5+0.5)*vh.w, y:(-_v3.y*0.5+0.5)*vh.h, z:_v3.z};
   }
 
   function findClosestPoint(px,py,r){
-    if (N === 0) return -1;
-    const rad=(r||PICK_RADIUS_PX);
-    const r2=rad*rad;
+    if(N===0) return -1;
+    const rad=(r||PICK_RADIUS_PX), r2=rad*rad;
     let best=-1, bestD2=Infinity;
-
     for(let i=0;i<N;i++){
-      const p=projectToScreen(i);
-      if(p.z<-1||p.z>1) continue;
-      const dx=p.x-px, dy=p.y-py;
-      const d2=dx*dx+dy*dy;
-      if(d2<=r2 && d2<bestD2){
-        bestD2=d2;
-        best=i;
-      }
+      const p=projectToScreen(i); if(p.z<-1||p.z>1) continue;
+      const dx=p.x-px, dy=p.y-py, d2=dx*dx+dy*dy;
+      if(d2<=r2 && d2<bestD2){ bestD2=d2; best=i; }
     }
     return best;
   }
 
   let hoverIndex=-1;
   window.addEventListener("pointermove", function(e){
-    if(!renderer || !renderer.domElement || N === 0) return;
+    if(!renderer||!renderer.domElement||N===0) return;
     const rect=renderer.domElement.getBoundingClientRect();
     const px=e.clientX-rect.left, py=e.clientY-rect.top;
     hoverIndex=findClosestPoint(px,py,PICK_RADIUS_PX);
-    if(hoverIndex!==-1){
-      showTooltip(hoverIndex,e.clientX,e.clientY);
-    } else {
-      hideTooltip();
-    }
+    if(hoverIndex!==-1) showTooltip(hoverIndex,e.clientX,e.clientY);
+    else hideTooltip();
   });
 
-  function showTooltip(i, x, y){
-    if (N === 0 || i < 0 || i >= N || i >= LABEL_LIMIT){
-      hideTooltip();
-      return;
-    }
-
-    const m = meta[i];
-    tooltip.style.left = String(x+12) + "px";
-    tooltip.style.top = String(y-12) + "px";
-
-    if (m.type === 'user'){
-      const d = device[i];
-      const dev = [
-        d.tv?'TV✓':'TV–',
-        d.mobile?'모바일✓':'모바일–',
-        d.ipad?'iPad✓':'iPad–',
-        d.fridge?'냉장고✓':'냉장고–',
-        d.washer?'세탁기✓':'세탁기–'
-      ].join(' · ');
-      tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>유형: 사용자 · 클러스터: '+m.clusterName+'<br/>기기: '+dev;
-    } else if (m.type === 'attr'){
-      tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>유형: 속성(추론) · 클러스터: '+m.clusterName;
+  function showTooltip(i,x,y){
+    if(N===0||i<0||i>=N||i>=LABEL_LIMIT){ hideTooltip(); return; }
+    const m=meta[i];
+    tooltip.style.left=String(x+12)+"px"; tooltip.style.top=String(y-12)+"px";
+    if(m.type==='user'){
+      const d=device[i];
+      const dev=[d.tv?'TV✓':'TV–',d.mobile?'모바일✓':'모바일–',d.ipad?'iPad✓':'iPad–',d.fridge?'냉장고✓':'냉장고–',d.washer?'세탁기✓':'세탁기–'].join(' · ');
+      tooltip.innerHTML='<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>유형: 사용자 · 클러스터: '+m.clusterName+'<br/>기기: '+dev;
+    } else if(m.type==='attr'){
+      tooltip.innerHTML='<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>유형: 속성(추론) · 클러스터: '+m.clusterName;
     } else {
-      tooltip.innerHTML = '<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>유형: 행동 · 클러스터: '+m.clusterName;
+      tooltip.innerHTML='<div style="font-weight:700;margin-bottom:2px">'+m.id+'</div>유형: 행동 · 클러스터: '+m.clusterName;
     }
     tooltip.style.display='block';
   }
-
   function hideTooltip(){ tooltip.style.display='none'; }
 
-  function indicesWhere(pred){
-    if (N === 0) return [];
-    const arr=[];
-    for(let i=0;i<N;i++) if(pred(i)) arr.push(i);
-    return arr;
-  }
+  function indicesWhere(pred){ if(N===0) return []; const arr=[]; for(let i=0;i<N;i++) if(pred(i)) arr.push(i); return arr; }
 
   let selectionMode = 'point';
   const selPointEl = document.getElementById('selPoint');
   const selClusterEl = document.getElementById('selCluster');
-  if (selPointEl) selPointEl.addEventListener('change', function(e){ if(e.target.checked) selectionMode='point'; });
-  if (selClusterEl) selClusterEl.addEventListener('change', function(e){ if(e.target.checked) selectionMode='cluster'; });
+  if(selPointEl) selPointEl.addEventListener('change', function(e){ if(e.target.checked) selectionMode='point'; });
+  if(selClusterEl) selClusterEl.addEventListener('change', function(e){ if(e.target.checked) selectionMode='cluster'; });
 
   function updateInspector(singleIndex, indices){
-    const panel = document.getElementById('inspector');
-    if (!panel) return;
-
-    if (N === 0) {
-      panel.innerHTML = '<h4>데이터가 아직 불러와지지 않았습니다</h4><div class="muted">실험 조건을 선택해 데이터를 불러와 주세요.</div>';
-      return;
-    }
-
-    if (typeof singleIndex === 'undefined') singleIndex = null;
-    if (!indices) indices = null;
-
-    if (singleIndex===null && !indices){
-      panel.innerHTML = '<h4>선택 없음</h4><div class="muted">점 또는 클러스터를 선택해 주세요.</div>';
-      return;
-    }
-
-    if (singleIndex!==null){
-      if (singleIndex < 0 || singleIndex >= N) {
-        panel.innerHTML = '<h4>선택 오류</h4><div class="muted">유효하지 않은 포인트 선택입니다.</div>';
-        return;
-      }
-
+    const panel=document.getElementById('inspector');
+    if(!panel) return;
+    if(N===0){ panel.innerHTML='<h4>데이터가 아직 불러와지지 않았습니다</h4><div class="muted">실험 조건을 선택해 데이터를 불러와 주세요.</div>'; return; }
+    if(typeof singleIndex==='undefined') singleIndex=null;
+    if(!indices) indices=null;
+    if(singleIndex===null && !indices){ panel.innerHTML='<h4>선택 없음</h4><div class="muted">점 또는 클러스터를 선택해 주세요.</div>'; return; }
+    if(singleIndex!==null){
+      if(singleIndex<0||singleIndex>=N){ panel.innerHTML='<h4>선택 오류</h4>'; return; }
       const m=meta[singleIndex];
-      if (m.type==='user'){
+      if(m.type==='user'){
         const d=device[singleIndex];
-        panel.innerHTML = '<h4>'+m.id+'</h4>'
-          + '<div>유형: <b>사용자</b> · 클러스터: <b>'+m.clusterName+'</b></div>'
-          + '<div class="muted">그룹: '+m.group+'</div>'
-          + '<div style="margin-top:6px">기기: '+[
-            d.tv?'TV✓':'TV–',
-            d.mobile?'모바일✓':'모바일–',
-            d.ipad?'iPad✓':'iPad–',
-            d.fridge?'냉장고✓':'냉장고–',
-            d.washer?'세탁기✓':'세탁기–'
-          ].join(' · ')+'</div>';
-      } else if (m.type==='attr'){
-        panel.innerHTML = '<h4>'+m.id+'</h4><div>유형: <b>속성(추론)</b> · 클러스터: <b>'+m.clusterName+'</b></div>';
+        panel.innerHTML='<h4>'+m.id+'</h4><div>유형: <b>사용자</b> · 클러스터: <b>'+m.clusterName+'</b></div><div class="muted">그룹: '+m.group+'</div><div style="margin-top:6px">기기: '+[d.tv?'TV✓':'TV–',d.mobile?'모바일✓':'모바일–',d.ipad?'iPad✓':'iPad–',d.fridge?'냉장고✓':'냉장고–',d.washer?'세탁기✓':'세탁기–'].join(' · ')+'</div>';
+      } else if(m.type==='attr'){
+        panel.innerHTML='<h4>'+m.id+'</h4><div>유형: <b>속성(추론)</b> · 클러스터: <b>'+m.clusterName+'</b></div>';
       } else {
-        panel.innerHTML = '<h4>'+m.id+'</h4><div>유형: <b>행동</b> · 클러스터: <b>'+m.clusterName+'</b></div>';
+        panel.innerHTML='<h4>'+m.id+'</h4><div>유형: <b>행동</b> · 클러스터: <b>'+m.clusterName+'</b></div>';
       }
       return;
     }
-
-    if (!indices || indices.length === 0 || clusterOf[indices[0]] === undefined) {
-      panel.innerHTML = '<h4>선택 오류</h4><div class="muted">선택한 클러스터 데이터가 올바르지 않습니다.</div>';
-      return;
-    }
-
-    const k = clusterOf[indices[0]];
-    const metrics = CLUSTER_METRICS[k];
-    const userIdx = indices.filter(i => typeOf[i]==='user');
-    const n = userIdx.length || 1;
-
+    if(!indices||indices.length===0||clusterOf[indices[0]]===undefined){ panel.innerHTML='<h4>선택 오류</h4>'; return; }
+    const k=clusterOf[indices[0]];
+    const metrics=CLUSTER_METRICS[k];
+    const userIdx=indices.filter(i=>typeOf[i]==='user');
+    const n=userIdx.length||1;
     const c={tv:0,mobile:0,ipad:0,fridge:0,washer:0};
-    userIdx.forEach(i => {
-      const d=device[i];
-      c.tv+=d.tv?1:0;
-      c.mobile+=d.mobile?1:0;
-      c.ipad+=d.ipad?1:0;
-      c.fridge+=d.fridge?1:0;
-      c.washer+=d.washer?1:0;
-    });
-
+    userIdx.forEach(i=>{ const d=device[i]; c.tv+=d.tv?1:0; c.mobile+=d.mobile?1:0; c.ipad+=d.ipad?1:0; c.fridge+=d.fridge?1:0; c.washer+=d.washer?1:0; });
     function pct(x){ return Math.round(100*x/n)+'%'; }
-
-    panel.innerHTML = '<h4>'+metrics.name+' 클러스터 (사용자 n='+n+')</h4>'
-      + '<div>평균 야간 사용 간격: '+metrics.night_interval_min+'분</div>'
-      + '<div>야간 냉장고 열림 횟수: '+metrics.fridge_opens_night+'회</div>'
-      + '<div style="margin-top:6px">주요 기기: TV '+pct(c.tv)+' · 모바일 '+pct(c.mobile)+' · iPad '+pct(c.ipad)+' · 냉장고 '+pct(c.fridge)+' · 세탁기 '+pct(c.washer)+'</div>';
+    panel.innerHTML='<h4>'+metrics.name+' 클러스터 (사용자 n='+n+')</h4><div>평균 야간 사용 간격: '+metrics.night_interval_min+'분</div><div>야간 냉장고 열림 횟수: '+metrics.fridge_opens_night+'회</div><div style="margin-top:6px">주요 기기: TV '+pct(c.tv)+' · 모바일 '+pct(c.mobile)+' · iPad '+pct(c.ipad)+' · 냉장고 '+pct(c.fridge)+' · 세탁기 '+pct(c.washer)+'</div>';
   }
 
   updateInspector();
 
   renderer.domElement.addEventListener('click', function(e){
-    if(N === 0) return;
-
-    if(hoverIndex===-1){
-      clearSelection();
-      updateInspector();
-      log('click',{hoverIndex:-1});
-      return;
-    }
-
-    if (hoverIndex < 0 || hoverIndex >= N) {
-      console.warn("유효하지 않은 hoverIndex 클릭:", hoverIndex);
-      clearSelection();
-      updateInspector();
-      return;
-    }
-
-    if (selectionMode==='cluster' || e.shiftKey){
+    if(N===0) return;
+    if(hoverIndex===-1){ clearSelection(); updateInspector(); log('click',{hoverIndex:-1}); return; }
+    if(hoverIndex<0||hoverIndex>=N){ clearSelection(); updateInspector(); return; }
+    if(selectionMode==='cluster'||e.shiftKey){
       const k=clusterOf[hoverIndex];
-      const idxs = indicesWhere(i => clusterOf[i]===k);
+      const idxs=indicesWhere(i=>clusterOf[i]===k);
       const out=selGeom.getAttribute('position').array;
       let cnt=0;
-      for (let ii=0; ii<idxs.length; ii++){
-        const i=idxs[ii];
-        out[cnt*3]=positions[i*3];
-        out[cnt*3+1]=positions[i*3+1];
-        out[cnt*3+2]=positions[i*3+2];
-        cnt++;
-      }
-      selGeom.setDrawRange(0,cnt);
-      selGeom.getAttribute('position').needsUpdate=true;
-      log('click',{mode:'cluster', hoverIndex:hoverIndex, cluster:k});
-      updateInspector(null, idxs);
+      for(let ii=0;ii<idxs.length;ii++){ const i=idxs[ii]; out[cnt*3]=positions[i*3]; out[cnt*3+1]=positions[i*3+1]; out[cnt*3+2]=positions[i*3+2]; cnt++; }
+      selGeom.setDrawRange(0,cnt); selGeom.getAttribute('position').needsUpdate=true;
+      log('click',{mode:'cluster',hoverIndex:hoverIndex,cluster:k});
+      updateInspector(null,idxs);
     } else {
       const out2=selGeom.getAttribute('position').array;
-      out2[0]=positions[hoverIndex*3];
-      out2[1]=positions[hoverIndex*3+1];
-      out2[2]=positions[hoverIndex*3+2];
-      selGeom.setDrawRange(0,1);
-      selGeom.getAttribute('position').needsUpdate=true;
-      log('click',{mode:'point', hoverIndex:hoverIndex, cluster:clusterOf[hoverIndex]});
-      updateInspector(hoverIndex, null);
+      out2[0]=positions[hoverIndex*3]; out2[1]=positions[hoverIndex*3+1]; out2[2]=positions[hoverIndex*3+2];
+      selGeom.setDrawRange(0,1); selGeom.getAttribute('position').needsUpdate=true;
+      log('click',{mode:'point',hoverIndex:hoverIndex,cluster:clusterOf[hoverIndex]});
+      updateInspector(hoverIndex,null);
     }
   });
 
-  /* ====== Resize/Loop ====== */
   function resize(){
     const w=stageEl.clientWidth, h=stageEl.clientHeight;
-    renderer.setSize(w,h);
-    camera.aspect=w/h;
-    camera.updateProjectionMatrix();
+    renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
   }
-  addEventListener("resize", resize);
-  resize();
+  addEventListener("resize", resize); resize();
 
-  function animate(){
-    requestAnimationFrame(animate);
-    controls.update();
-    renderer.render(scene,camera);
-  }
-
-  function renderOnce(){ renderer.render(scene, camera); }
+  function animate(){ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); }
+  function renderOnce(){ renderer.render(scene,camera); }
   animate();
 
-  /* ====== Task Panel ====== */
+  /* ====== Task Panel (MODIFIED) ====== */
   const TASKS = [
-    "자정 이후 냉장고 열림이 잦은 상위 3개 그룹을 찾아보세요.<br>각 그룹에 마우스를 올리거나 클릭하여 상세 정보를 확인하며 비교해 주세요.",
-    "‘야간형’ 클러스터와 ‘가족 중심형’ 클러스터를 각각 찾아, ‘야간 사용 간격(분)’ 값을 비교해 보세요.<br>각 클러스터에 마우스를 올리거나 클릭하여 값을 확인해 주세요.",
-    "‘야간형’ 클러스터를 찾은 뒤, 마우스를 올려 표시되는 툴팁을 확인해 보세요.<br>툴팁 또는 상세 정보에서 아래 두 항목이 포함되어 있는지 확인해 주세요.<br><br>관심사 › 게이머 › 모바일 게임<br>냉장고 · 냉장실 문 · 장시간 · 열림"
+    "화면에는 4개의 점 무리(클러스터)가 보입니다.<br>각 클러스터를 <b>Shift+클릭</b>하면 좌측 하단 패널에 <b>'야간 냉장고 열림 횟수'</b>가 표시됩니다.<br>이 값이 높은 <b>상위 3개 클러스터</b>를 찾아 비교해 보세요.",
+    "'야간형' 클러스터와 '가족 중심형' 클러스터를 각각 <b>Shift+클릭</b>하여 선택해 보세요.<br>좌측 하단 패널에 표시되는 <b>'평균 야간 사용 간격(분)'</b> 값을 비교하고 메모해 주세요.<br><span class='muted'>힌트: 야간형은 간격이 짧고, 가족 중심형은 간격이 긴 편입니다.</span>",
+    "'야간형' 클러스터 내부의 <b style='color:#ff2bb3'>분홍색 점(속성)</b>과 <b style='color:#64b5f6'>파란색 점(행동)</b>에 마우스를 올려 보세요.<br>툴팁에서 아래 두 항목을 찾을 수 있는지 확인해 주세요.<br><br>① 속성: <b>관심사 › 게이머 › 모바일 게임</b><br>② 행동: <b>냉장고 · 냉장실 문 · 장시간 · 열림</b>"
   ];
 
   function mountTasks(){
     const el=document.getElementById("taskPanel");
 
     if(!CFG.guided){
-      el.innerHTML = "<h4>자유 탐색</h4><div>야간 냉장고 사용과 관련된 흥미로운 패턴 1가지를 찾아보세요.</div>";
+      el.innerHTML = "<h4>자유 탐색</h4>"
+        + "<div>야간 냉장고 사용과 관련된 흥미로운 패턴 <b>1가지</b>를 찾아보세요.</div>"
+        + "<div style='margin-top:8px; padding:8px 10px; background:rgba(255,255,255,.07); border-radius:8px; font-size:11.5px; line-height:1.6'>"
+        + "<b>탐색 방법 안내</b><br>"
+        + "· <b>마우스 드래그</b>: 3D 공간 회전<br>"
+        + "· <b>마우스 휠</b>: 확대/축소<br>"
+        + "· <b>점 위에 마우스 올리기</b>: 툴팁으로 상세 정보 확인<br>"
+        + "· <b>클릭</b>: 개별 점 선택 → 좌측 하단 패널에서 상세 정보 확인<br>"
+        + "· <b>Shift+클릭</b>: 클러스터 전체 선택 → 좌측 하단 패널에서 클러스터 요약 확인"
+        + "</div>"
+        + "<div style='margin-top:8px; font-size:11.5px; color:var(--muted); line-height:1.5'>"
+        + "<b>패턴 예시</b>: 특정 클러스터에서 반복적으로 나타나는 속성이나 행동, 클러스터 간 야간 사용 빈도의 차이, 특정 기기 보유율과 행동의 관계 등"
+        + "</div>";
       return;
     }
 
     let idx=0;
-
     function render(){
       el.innerHTML =
         '<h4>가이드 과업 '+(idx+1)+'/'+TASKS.length+'</h4>' +
         '<div>'+TASKS[idx]+'</div>' +
-        '<button class="btn btnNext" id="nextStep" type="button">'+(idx<TASKS.length-1?'다음':'완료')+'</button>';
+        (idx === 0 ? '<div style="margin-top:8px; padding:6px 8px; background:rgba(255,255,255,.07); border-radius:8px; font-size:11px; line-height:1.5; color:var(--muted)">'
+          + '<b>조작 안내</b>: 마우스 드래그=회전 · 휠=확대/축소 · 점 위 마우스=툴팁 · 클릭=개별 선택 · Shift+클릭=클러스터 선택</div>' : '') +
+        '<button class="btn btnNext" id="nextStep" type="button" style="margin-top:8px">'+(idx<TASKS.length-1?'다음':'완료')+'</button>';
     }
-
     render();
-
     el.onclick = function(e){
-      const t = e.target;
-      if (t && t.id === "nextStep"){
-        log("guide_next", {step: idx+1});
+      const t=e.target;
+      if(t && t.id==="nextStep"){
+        log("guide_next",{step:idx+1});
         idx++;
         if(idx>=TASKS.length){
-          el.innerHTML = '<h4>가이드 과업 완료</h4><div>감사합니다. 실험이 종료되었습니다.</div><button class="btn btnNext" type="button" style="margin-top:8px;" disabled>완료됨</button>';
-        } else {
-          render();
-        }
+          el.innerHTML='<h4>가이드 과업 완료</h4><div>감사합니다. 실험이 종료되었습니다.</div><button class="btn btnNext" type="button" style="margin-top:8px;" disabled>완료됨</button>';
+        } else { render(); }
       }
     };
   }
@@ -911,111 +606,43 @@
   const qs = new URLSearchParams(location.search);
   const PID = qs.get("panel_id") || "test_pid";
   const logs = [];
-
   function nowISO(){ return new Date().toISOString(); }
-
   function log(t, det){
     if(!det) det={};
-
-    const logData = Object.assign({
-      ts: nowISO(),
-      panel_id: PID,
-      condition: COND,
-      event: t
-    }, det);
-
-    logs.push(logData);
-
+    logs.push(Object.assign({ ts:nowISO(), panel_id:PID, condition:COND, event:t }, det));
     fetch("https://script.google.com/macros/s/AKfycbyrgYV9VXZCELJxp12maCn8F4McWM42aWrP2RltTb_SWr5lmEiJo5YA88VNZOp275zt/exec", {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({
-        panel_id: PID,
-        condition: COND,
-        event: t,
-        detail: det || {}
-      })
+      method:"POST", mode:"no-cors",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({ panel_id:PID, condition:COND, event:t, detail:det||{} })
     });
   }
 
-  /* ====== Apply Condition ====== */
   function applyCondition(cond, opt){
-    if(!MAP[cond]){
-      alert("유효하지 않은 조건입니다.");
-      return;
-    }
-
-    const debug = opt && opt.debug ? true : false;
-    COND=cond;
-    CFG=MAP[cond];
-    DEBUG=debug;
-    SIZE=CFG.size;
-    LABEL_LIMIT=CFG.labelLimit;
-    N=CFG.N;
-    SIGMA=CFG.sigma;
-
-    const dbg = document.getElementById("debugControls");
-    if (dbg) dbg.style.display = DEBUG ? "block" : "none";
-
-    rebuildBuffers(N);
-    regenerate();
-    showSphereWire(RADIUS);
-    mountTasks();
-    log("session_start", {cfg:CFG});
+    if(!MAP[cond]){ alert("유효하지 않은 조건입니다."); return; }
+    COND=cond; CFG=MAP[cond]; DEBUG=opt&&opt.debug?true:false;
+    SIZE=CFG.size; LABEL_LIMIT=CFG.labelLimit; N=CFG.N; SIGMA=CFG.sigma;
+    const dbg=document.getElementById("debugControls");
+    if(dbg) dbg.style.display=DEBUG?"block":"none";
+    rebuildBuffers(N); regenerate(); showSphereWire(RADIUS); mountTasks();
+    log("session_start",{cfg:CFG});
   }
 
-  /* ====== Debug Controls ====== */
   const lowBtn=document.getElementById("lowLoad");
   const highBtn=document.getElementById("highLoad");
   const nInput=document.getElementById("nInput");
-  const applyN=document.getElementById("applyN");
+  const applyNBtn=document.getElementById("applyN");
+  if(lowBtn) lowBtn.onclick=function(){ LABEL_LIMIT=100; SIZE=3.0; rebuildBuffers(500); regenerate(); log("debug_low"); };
+  if(highBtn) highBtn.onclick=function(){ LABEL_LIMIT=Infinity; SIZE=3.6; rebuildBuffers(5000); regenerate(); log("debug_high"); };
+  if(applyNBtn) applyNBtn.onclick=function(){ const v=parseInt(nInput.value,10); if(isNaN(v)||v<100||v>20000){ alert("N 값은 100~20000 사이여야 합니다."); return; } rebuildBuffers(v); regenerate(); log("debug_applyN",{N:v}); };
 
-  if(lowBtn){
-    lowBtn.onclick=function(){
-      LABEL_LIMIT=100;
-      SIZE=3.0;
-      rebuildBuffers(500);
-      regenerate();
-      log("debug_low");
-    };
-  }
-
-  if(highBtn){
-    highBtn.onclick=function(){
-      LABEL_LIMIT=Infinity;
-      SIZE=3.6;
-      rebuildBuffers(5000);
-      regenerate();
-      log("debug_high");
-    };
-  }
-
-  if(applyN){
-    applyN.onclick=function(){
-      const v=parseInt(nInput.value,10);
-      if(isNaN(v)||v<100||v>20000){
-        alert("N 값은 100~20000 사이여야 합니다.");
-        return;
-      }
-      rebuildBuffers(v);
-      regenerate();
-      log("debug_applyN", {N:v});
-    };
-  }
-
-  /* ====== Initial Render/Error Guard ====== */
   window.addEventListener('error', function(e){
     try{ console.error(e.error||e.message); }catch(_){}
-    alert('스크립트 오류: '+(e.error && e.error.message ? e.error.message : e.message));
+    alert('스크립트 오류: '+(e.error&&e.error.message?e.error.message:e.message));
   });
 
-  syncLabels();
-  resize();
-
+  syncLabels(); resize();
   const condition = qs.get("condition") || "LC-G";
   applyCondition(condition);
-
   updateInspector();
 </script>
 </body>
