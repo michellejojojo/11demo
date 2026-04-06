@@ -596,8 +596,12 @@
         log("guide_next",{step:idx+1});
         idx++;
         if(idx>=TASKS.length){
-          el.innerHTML='<h4>가이드 과업 완료</h4><div>감사합니다. 실험이 종료되었습니다.</div><button class="btn btnNext" type="button" style="margin-top:8px;" disabled>완료됨</button>';
-        } else { render(); }
+  el.innerHTML='<h4>가이드 과업 완료</h4><div>감사합니다. 잠시 후 설문으로 이동합니다...</div>';
+  log("task_complete", {condition: COND});
+  setTimeout(function(){
+    location.href = "https://survey.panel.co.kr/2026/147887/m10.asp?panel_id=" + PID;
+  }, 1500);
+} else { render(); }
       }
     };
   }
