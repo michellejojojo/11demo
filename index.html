@@ -634,7 +634,23 @@
           + "<div style='margin-top:8px; font-size:11.5px; color:var(--muted); line-height:1.5'>"
           + "<b>패턴 예시</b>: 특정 클러스터에서 반복적으로 나타나는 속성이나 행동, 클러스터 간 야간 사용 빈도의 차이, 특정 기기 보유율과 행동의 관계 등"
           + "</div>"
-          + "<button class='btn' id='freeComplete' type='button' style='margin-top:12px'>탐색 완료</button>";
+          + "<button class='btn' id='freeComplete' type='button' style='margin-top:12px'>탐색 완료</button>"
+          + "<div id='freeTimerWrap' style='margin-top:10px;color:var(--muted);font-size:12px;text-align:center;padding:6px 0;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.04)'>자유 탐색 중 · <span id='freeCountdown'>60</span>초 후 완료 가능</div>";
+
+        var freeBtn = document.getElementById('freeComplete');
+        freeBtn.style.display = 'none';
+        var freeRemaining = 60;
+        var freeCdEl = document.getElementById('freeCountdown');
+        var freeTimer = setInterval(function(){
+          freeRemaining--;
+          if(freeCdEl) freeCdEl.textContent = String(freeRemaining);
+          if(freeRemaining <= 0){
+            clearInterval(freeTimer);
+            freeBtn.style.display = '';
+            var wrap = document.getElementById('freeTimerWrap');
+            if(wrap) wrap.style.display = 'none';
+          }
+        }, 1000);
 
         document.getElementById('freeComplete').onclick = function(){
           log("free_complete", {condition: COND});
